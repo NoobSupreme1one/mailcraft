@@ -25,7 +25,7 @@ This is a Next.js 15 application for freelance email templates with drag-and-dro
 - **Database**: SQLite with Prisma ORM
 - **Authentication**: Clerk
 - **Email Builder**: GrapesJS with newsletter preset
-- **AI Integration**: Anthropic SDK (for template generation)
+ - **AI Integration**: Google Gemini (primary) with OpenRouter fallback
 - **Styling**: Tailwind CSS
 - **UI Components**: Radix UI primitives
 
