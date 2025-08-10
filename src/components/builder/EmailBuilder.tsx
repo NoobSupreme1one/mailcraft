@@ -7,8 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { extractVariablesFromHtml, substituteVariables, type VariableSchema } from "@/lib/variables";
 
+type EditorLike = {
+  getHtml(): string;
+  getComponents(): unknown;
+  setComponents(html: string): void;
+  destroy(): void;
+};
+
 export function EmailBuilder({ templateId }: { templateId: string }) {
-  const editorRef = useRef<grapesjs.Editor | null>(null);
+  const editorRef = useRef<EditorLike | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [variableSchema, setVariableSchema] = useState<VariableSchema[]>([]);
@@ -25,7 +32,7 @@ export function EmailBuilder({ templateId }: { templateId: string }) {
       storageManager: false,
       plugins: [presetNewsletter],
     });
-    editorRef.current = editor;
+    editorRef.current = editor as unknown as EditorLike;
 
     (async () => {
       const res = await fetch(`/api/templates/${templateId}`);

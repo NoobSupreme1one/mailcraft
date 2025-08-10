@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default async function DashboardPage() {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return null;
 
   const templates = await db.template.findMany({ where: { ownerId: userId }, orderBy: { updatedAt: "desc" } });

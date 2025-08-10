@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 
 type GallerySearch = { q?: string; category?: string };
 
-export default async function GalleryPage({ searchParams }: { searchParams?: GallerySearch }) {
-  const q = searchParams?.q?.trim() ?? "";
-  const category = searchParams?.category?.trim() || undefined;
+export default async function GalleryPage({ searchParams }: { searchParams?: Promise<GallerySearch> }) {
+  const sp = (await searchParams) ?? {};
+  const q = sp.q?.trim() ?? "";
+  const category = sp.category?.trim() || undefined;
   const where: { isPublished: true; category?: string; title?: { contains: string } } = { isPublished: true };
   if (category) where.category = category;
   if (q) where.title = { contains: q };

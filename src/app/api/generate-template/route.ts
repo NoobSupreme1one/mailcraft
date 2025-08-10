@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createChatClient } from "@/lib/aiClient";
 
 export async function POST(req: Request) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
   const { prompt } = await req.json();
   const system = `You are an expert email HTML designer. Generate a complete, production-ready responsive email using table-based layout and inline CSS only. No external CSS or JS. Keep width 600px, mobile-friendly. Return ONLY the HTML.`;
