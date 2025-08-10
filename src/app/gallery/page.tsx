@@ -3,12 +3,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default async function GalleryPage({ searchParams }: { searchParams?: { q?: string; category?: string } }) {
+type GallerySearch = { q?: string; category?: string };
+
+export default async function GalleryPage({ searchParams }: { searchParams?: GallerySearch }) {
   const q = searchParams?.q?.trim() ?? "";
   const category = searchParams?.category?.trim() || undefined;
-  const where: any = { isPublished: true };
+  const where: { isPublished: true; category?: string; title?: { contains: string } } = { isPublished: true };
   if (category) where.category = category;
-  if (q) where.title = { contains: q } as any;
+  if (q) where.title = { contains: q };
   const templates = await db.template.findMany({ where, orderBy: { updatedAt: "desc" }, take: 60 });
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">

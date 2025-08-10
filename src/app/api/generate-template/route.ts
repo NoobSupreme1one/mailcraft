@@ -41,19 +41,19 @@ export async function POST(req: Request) {
     if (result.provider === "gemini") {
       const parts = result.response?.candidates?.[0]?.content?.parts ?? [];
       html = parts
-        .map((p: any) => (typeof p === "string" ? p : p?.text || ""))
+        .map((p: { text?: string } | string) => (typeof p === "string" ? p : p?.text || ""))
         .join("\n")
         .trim();
     } else {
       const content = result.response?.choices?.[0]?.message?.content ?? "";
       html = Array.isArray(content)
-        ? content.map((part: any) => (typeof part === "string" ? part : part?.text || "")).join("\n")
+        ? content.map((part: { text?: string } | string) => (typeof part === "string" ? part : part?.text || "")).join("\n")
         : content;
     }
 
     if (!html) return new NextResponse("AI generation failed", { status: 500 });
     return NextResponse.json({ html, provider: result.provider, model: result.model });
-  } catch (e) {
+  } catch (_e) {
     return new NextResponse("AI generation failed", { status: 500 });
   }
 }

@@ -5,15 +5,14 @@ import "grapesjs/dist/css/grapes.min.css";
 import presetNewsletter from "grapesjs-preset-newsletter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { extractVariablesFromHtml, substituteVariables, buildDefaultSchema, type VariableSchema } from "@/lib/variables";
+import { extractVariablesFromHtml, substituteVariables, type VariableSchema } from "@/lib/variables";
 
 export function EmailBuilder({ templateId }: { templateId: string }) {
   const editorRef = useRef<grapesjs.Editor | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [variableSchema, setVariableSchema] = useState<VariableSchema[]>([]);
-  const [sampleData, setSampleData] = useState<Record<string, any>>({});
+  const [sampleData, setSampleData] = useState<Record<string, string>>({});
   const [previewHtml, setPreviewHtml] = useState<string>("");
 
   useEffect(() => {
@@ -34,7 +33,7 @@ export function EmailBuilder({ templateId }: { templateId: string }) {
         const data = await res.json();
         if (data.html) editor.setComponents(data.html);
         setVariableSchema((data.variableSchema as VariableSchema[] | null) ?? []);
-        setSampleData((data.sampleData as Record<string, any> | null) ?? {});
+        setSampleData((data.sampleData as Record<string, string> | null) ?? {});
         setPreviewHtml(String(data.html ?? ""));
       }
     })();
@@ -113,7 +112,7 @@ export function EmailBuilder({ templateId }: { templateId: string }) {
           <div className="text-sm font-medium">Variables</div>
           <div className="space-y-2">
             {variableSchema.length === 0 && (
-              <div className="text-xs text-neutral-500">No variables detected. Click "Scan variables" to extract from the HTML.</div>
+              <div className="text-xs text-neutral-500">No variables detected. Click &quot;Scan variables&quot; to extract from the HTML.</div>
             )}
             {variableSchema.map((v) => (
               <div key={v.name} className="grid grid-cols-3 gap-2 items-center">
@@ -121,7 +120,7 @@ export function EmailBuilder({ templateId }: { templateId: string }) {
                 <Input
                   className="col-span-2"
                   placeholder={v.placeholder ?? v.label ?? v.name}
-                  value={String((sampleData?.[v.name] ?? '') as any)}
+                  value={sampleData?.[v.name] ?? ''}
                   onChange={(e) => handleSampleDataChange(v.name, e.target.value)}
                 />
               </div>

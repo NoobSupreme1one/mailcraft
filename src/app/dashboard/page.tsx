@@ -9,11 +9,7 @@ export default async function DashboardPage() {
 
   const templates = await db.template.findMany({ where: { ownerId: userId }, orderBy: { updatedAt: "desc" } });
 
-  async function createEmptyTemplate() {
-    "use server";
-    const tpl = await db.template.create({ data: { title: "Untitled", html: "", ownerId: userId } });
-    return tpl.id;
-  }
+  // actions moved to /new; keeping dashboard read-only for now
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">

@@ -137,7 +137,10 @@ async function callGemini({ apiKey, model, messages, temperature, maxTokens, tim
   timeoutMs?: number;
 }) {
   const url = `${GEMINI_API}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  const body: any = {
+  const body: {
+    contents: Array<{ role: string; parts: Array<{ text: string }> }>;
+    generationConfig: { temperature?: number; maxOutputTokens?: number };
+  } = {
     contents: toGeminiContents(messages),
     generationConfig: {
       temperature,
@@ -208,12 +211,17 @@ async function callOpenRouter({
   extraHeaders?: Record<string, string>;
 }) {
   const url = `${OPENROUTER_API}/chat/completions`;
-  const headers = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${apiKey}`,
     ...extraHeaders, // e.g., {"HTTP-Referer": "...", "X-Title": "..."}
-  } as Record<string, string>;
-  const body: any = {
+  };
+  const body: {
+    model: string;
+    messages: Array<{ role: string; content: string }>;
+    temperature?: number;
+    max_tokens?: number;
+  } = {
     model,
     messages,
     temperature,
