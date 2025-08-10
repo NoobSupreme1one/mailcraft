@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { createChatClient } from "@/lib/aiClient";
 
 export async function POST(req: Request) {
   const { userId } = auth();
@@ -9,91 +10,50 @@ export async function POST(req: Request) {
 
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const openrouterApiKey = process.env.OPENROUTER_API_KEY;
-
   if (!geminiApiKey && !openrouterApiKey) {
     return new NextResponse("Missing GEMINI_API_KEY or OPENROUTER_API_KEY", { status: 500 });
   }
 
-  // Try Gemini first (via REST API, no SDK)
-  if (geminiApiKey) {
-    try {
-      const modelId = process.env.GEMINI_MODEL || "gemini-2.0-flash";
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
+  const client = createChatClient({ geminiApiKey, openrouterApiKey });
+  const geminiModel = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+  const openrouterModel = process.env.OPENROUTER_MODEL; // optional allowList override
 
-      const promptText = `${system}\n\nCreate an email for: ${prompt}`;
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: promptText }] },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 4000,
-          },
-        }),
-      });
+  const messages = [
+    { role: "system" as const, content: system },
+    { role: "user" as const, content: `Create an email for: ${prompt}` },
+  ];
 
-      if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`Gemini error ${resp.status}: ${errText}`);
-      }
+  try {
+    const result = await client.chat({
+      messages,
+      temperature: 0.7,
+      maxTokens: 4000,
+      geminiModel,
+      openrouterAllowList: openrouterModel ? [openrouterModel] : null,
+      openrouterHeaders: {
+        "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || "http://localhost:3000",
+        "X-Title": process.env.OPENROUTER_X_TITLE || "Freemail",
+      },
+    });
 
-      const data = await resp.json();
-      const html = data?.candidates?.[0]?.content?.parts
-        ?.map((p: any) => (typeof p === "string" ? p : p?.text || ""))
-        ?.join("\n")
-        ?.trim();
-      if (html) {
-        return NextResponse.json({ html, provider: "gemini", model: modelId });
-      }
-    } catch (_) {
-      // Fall through to OpenRouter
-    }
-  }
-
-  // Fallback to OpenRouter if available
-  if (openrouterApiKey) {
-    try {
-      const orModel = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
-      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openrouterApiKey}`,
-        },
-        body: JSON.stringify({
-          model: orModel,
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: `Create an email for: ${prompt}` },
-          ],
-          temperature: 0.7,
-          max_tokens: 4000,
-        }),
-      });
-
-      if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`OpenRouter error ${resp.status}: ${errText}`);
-      }
-
-      const data = await resp.json();
-      const content = data.choices?.[0]?.message?.content || "";
-      const html = Array.isArray(content)
-        ? content
-            .map((part: any) => (typeof part === "string" ? part : part?.text || ""))
-            .join("\n")
+    // Normalize to HTML string from common shapes
+    let html = "";
+    if (result.provider === "gemini") {
+      const parts = result.response?.candidates?.[0]?.content?.parts ?? [];
+      html = parts
+        .map((p: any) => (typeof p === "string" ? p : p?.text || ""))
+        .join("\n")
+        .trim();
+    } else {
+      const content = result.response?.choices?.[0]?.message?.content ?? "";
+      html = Array.isArray(content)
+        ? content.map((part: any) => (typeof part === "string" ? part : part?.text || "")).join("\n")
         : content;
-
-      if (html) {
-        return NextResponse.json({ html, provider: "openrouter", model: orModel });
-      }
-    } catch (_) {
-      // Fall through
     }
-  }
 
-  return new NextResponse("AI generation failed", { status: 500 });
+    if (!html) return new NextResponse("AI generation failed", { status: 500 });
+    return NextResponse.json({ html, provider: result.provider, model: result.model });
+  } catch (e) {
+    return new NextResponse("AI generation failed", { status: 500 });
+  }
 }
