@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const { userId } = auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
   const body = await req.json().catch(() => ({}));
-  const { title = "Untitled", html = "", designJson = null } = body ?? {};
-  const tpl = await db.template.create({ data: { title, html, designJson, ownerId: userId, isPublished: false } });
+  const { title = "Untitled", html = "", designJson = null, variableSchema = null, sampleData = null } = body ?? {};
+  const tpl = await db.template.create({ data: { title, html, designJson, variableSchema, sampleData, ownerId: userId, isPublished: false } });
   return NextResponse.json(tpl);
 }

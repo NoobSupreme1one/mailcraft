@@ -17,10 +17,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return new NextResponse("Forbidden", { status: 403 });
 
   const body = await req.json();
-  const { title, html, designJson, isPublished } = body ?? {};
+  const { title, html, designJson, isPublished, variableSchema, sampleData } = body ?? {};
   const updated = await db.template.update({
     where: { id: params.id },
-    data: { title, html, designJson, isPublished },
+    data: { title, html, designJson, isPublished, variableSchema, sampleData },
   });
   return NextResponse.json(updated);
 }
