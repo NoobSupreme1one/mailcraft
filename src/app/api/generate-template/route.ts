@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
@@ -15,27 +14,37 @@ export async function POST(req: Request) {
     return new NextResponse("Missing GEMINI_API_KEY or OPENROUTER_API_KEY", { status: 500 });
   }
 
-  // Try Gemini first
+  // Try Gemini first (via REST API, no SDK)
   if (geminiApiKey) {
     try {
-      const genAI = new GoogleGenerativeAI(geminiApiKey);
       const modelId = process.env.GEMINI_MODEL || "gemini-2.0-flash";
-      const model = genAI.getGenerativeModel({
-        model: modelId,
-        systemInstruction: system,
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
+
+      const promptText = `${system}\n\nCreate an email for: ${prompt}`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            { role: "user", parts: [{ text: promptText }] },
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 4000,
+          },
+        }),
       });
 
-      const result = await model.generateContent({
-        contents: [
-          { role: "user", parts: [{ text: `Create an email for: ${prompt}` }] },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 4000,
-        },
-      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`Gemini error ${resp.status}: ${errText}`);
+      }
 
-      const html = result.response.text().trim();
+      const data = await resp.json();
+      const html = data?.candidates?.[0]?.content?.parts
+        ?.map((p: any) => (typeof p === "string" ? p : p?.text || ""))
+        ?.join("\n")
+        ?.trim();
       if (html) {
         return NextResponse.json({ html, provider: "gemini", model: modelId });
       }
