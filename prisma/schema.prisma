@@ -14,6 +14,9 @@ model Template {
   designJson   String?
   thumbnailUrl String?
   category     String?
+  // JSON metadata for variables system
+  variableSchema Json?
+  sampleData     Json?
   isPublished  Boolean  @default(false)
   ownerId      String?
   createdAt    DateTime @default(now())

@@ -1,14 +1,40 @@
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-export default async function GalleryPage() {
-  const templates = await db.template.findMany({ where: { isPublished: true }, orderBy: { updatedAt: "desc" } });
+export default async function GalleryPage({ searchParams }: { searchParams?: { q?: string; category?: string } }) {
+  const q = searchParams?.q?.trim() ?? "";
+  const category = searchParams?.category?.trim() || undefined;
+  const where: any = { isPublished: true };
+  if (category) where.category = category;
+  if (q) where.title = { contains: q } as any;
+  const templates = await db.template.findMany({ where, orderBy: { updatedAt: "desc" }, take: 60 });
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Template Gallery</h1>
-        <p className="text-sm text-neutral-500">Pick a template to start</p>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight">Template Gallery</h1>
+          <p className="text-sm text-neutral-500">Pick a template to start</p>
+        </div>
+        <form className="flex flex-wrap gap-2" action="/gallery" method="get">
+          <Input name="q" placeholder="Search by title" defaultValue={q} className="max-w-xs" />
+          <select name="category" defaultValue={category ?? ""} className="border rounded-md text-sm h-10 px-2">
+            <option value="">All categories</option>
+            <option value="Outreach">Outreach</option>
+            <option value="Sales">Sales</option>
+            <option value="Billing">Billing</option>
+            <option value="Onboarding">Onboarding</option>
+            <option value="Status">Status</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Legal">Legal</option>
+            <option value="PM">PM</option>
+            <option value="Support">Support</option>
+            <option value="Relationship">Relationship</option>
+            <option value="Retention">Retention</option>
+          </select>
+          <Button type="submit" variant="outline">Filter</Button>
+        </form>
       </div>
       <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {templates.map((t) => (

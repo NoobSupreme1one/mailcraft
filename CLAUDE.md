@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
+- `npm run process-template` - Process next email template from CSV (automated workflow)
 
 ## Database Commands
 
@@ -25,7 +26,7 @@ This is a Next.js 15 application for freelance email templates with drag-and-dro
 - **Database**: SQLite with Prisma ORM
 - **Authentication**: Clerk
 - **Email Builder**: GrapesJS with newsletter preset
-- **AI Integration**: Anthropic SDK (for template generation)
+ - **AI Integration**: Google Gemini (primary) with OpenRouter fallback
 - **Styling**: Tailwind CSS
 - **UI Components**: Radix UI primitives
 

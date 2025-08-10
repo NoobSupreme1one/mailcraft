@@ -1,29 +1,59 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { createChatClient } from "@/lib/aiClient";
 
 export async function POST(req: Request) {
   const { userId } = auth();
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
   const { prompt } = await req.json();
-  if (!process.env.ANTHROPIC_API_KEY) return new NextResponse("Missing ANTHROPIC_API_KEY", { status: 500 });
-
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const system = `You are an expert email HTML designer. Generate a complete, production-ready responsive email using table-based layout and inline CSS only. No external CSS or JS. Keep width 600px, mobile-friendly. Return ONLY the HTML.`;
-  const message = await anthropic.messages.create({
-    model: "claude-3-7-sonnet-2025-05-21",
-    max_tokens: 4000,
-    temperature: 0.7,
-    system,
-    messages: [
-      { role: "user", content: [{ type: "text", text: `Create an email for: ${prompt}` }] },
-    ],
-  });
 
-  const html = message.content
-    .filter((c) => c.type === "text")
-    .map((c: any) => c.text)
-    .join("\n");
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const openrouterApiKey = process.env.OPENROUTER_API_KEY;
+  if (!geminiApiKey && !openrouterApiKey) {
+    return new NextResponse("Missing GEMINI_API_KEY or OPENROUTER_API_KEY", { status: 500 });
+  }
 
-  return NextResponse.json({ html });
+  const client = createChatClient({ geminiApiKey, openrouterApiKey });
+  const geminiModel = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+  const openrouterModel = process.env.OPENROUTER_MODEL; // optional allowList override
+
+  const messages = [
+    { role: "system" as const, content: system },
+    { role: "user" as const, content: `Create an email for: ${prompt}` },
+  ];
+
+  try {
+    const result = await client.chat({
+      messages,
+      temperature: 0.7,
+      maxTokens: 4000,
+      geminiModel,
+      openrouterAllowList: openrouterModel ? [openrouterModel] : null,
+      openrouterHeaders: {
+        "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || "http://localhost:3000",
+        "X-Title": process.env.OPENROUTER_X_TITLE || "Freemail",
+      },
+    });
+
+    // Normalize to HTML string from common shapes
+    let html = "";
+    if (result.provider === "gemini") {
+      const parts = result.response?.candidates?.[0]?.content?.parts ?? [];
+      html = parts
+        .map((p: any) => (typeof p === "string" ? p : p?.text || ""))
+        .join("\n")
+        .trim();
+    } else {
+      const content = result.response?.choices?.[0]?.message?.content ?? "";
+      html = Array.isArray(content)
+        ? content.map((part: any) => (typeof part === "string" ? part : part?.text || "")).join("\n")
+        : content;
+    }
+
+    if (!html) return new NextResponse("AI generation failed", { status: 500 });
+    return NextResponse.json({ html, provider: result.provider, model: result.model });
+  } catch (e) {
+    return new NextResponse("AI generation failed", { status: 500 });
+  }
 }

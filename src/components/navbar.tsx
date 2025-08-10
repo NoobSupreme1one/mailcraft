@@ -4,15 +4,15 @@ import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
 export function Navbar() {
   return (
-    <header className="w-full border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:bg-black/50">
-      <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-semibold tracking-tight">
-          FreeMail
+    <header className="w-full sticky top-0 z-40 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-black/40">
+      <div className="container py-3 flex items-center justify-between">
+        <Link href="/" className="font-semibold tracking-tight text-lg">
+          <span className="text-[var(--primary)]">Free</span>Mail
         </Link>
-        <nav className="flex items-center gap-3">
-          <Link className="text-sm hover:underline" href="/gallery">Gallery</Link>
+        <nav className="flex items-center gap-4">
+          <Link className="text-sm text-slate-600 hover:text-slate-900" href="/gallery">Gallery</Link>
           <SignedIn>
-            <Link className="text-sm hover:underline" href="/dashboard">Dashboard</Link>
+            <Link className="text-sm text-slate-600 hover:text-slate-900" href="/dashboard">Dashboard</Link>
             <UserButton afterSignOutUrl="/" />
           </SignedIn>
           <SignedOut>

@@ -3,14 +3,20 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 
 export default function NewTemplatePage() {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { isSignedIn } = useUser();
 
   async function handleGenerate() {
     if (!prompt.trim()) return;
+    if (!isSignedIn) {
+      router.push("/sign-in");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/generate-template", {
@@ -18,6 +24,10 @@ export default function NewTemplatePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
       });
+      if (res.status === 401) {
+        router.push("/sign-in");
+        return;
+      }
       if (!res.ok) throw new Error("Failed to generate");
       const { html } = await res.json();
       const created = await fetch("/api/templates", {
@@ -36,7 +46,7 @@ export default function NewTemplatePage() {
       <h1 className="text-2xl font-semibold">AI-assisted template</h1>
       <Input placeholder="Describe the email you want" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
       <div className="flex gap-2">
-        <Button onClick={handleGenerate} disabled={loading}>{loading ? "Generating..." : "Generate with Claude"}</Button>
+        <Button onClick={handleGenerate} disabled={!isSignedIn || loading}>{loading ? "Generating..." : (isSignedIn ? "Generate with AI" : "Sign in to generate")}</Button>
       </div>
     </div>
   );
