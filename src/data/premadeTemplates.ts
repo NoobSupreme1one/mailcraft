@@ -1,13 +1,13 @@
 export const premadeTemplates: Array<{ title: string; category: string; html: string }> = [
   {
-    title: "Cold outreach (problem/pain, case-study-led, value-first) — Web/mobile app studios",
+    title: "Cold outreach — Web/mobile app studios",
     category: "Outreach",
-    html: coldoutreachproblempaincasestudyledvaluefirstWebmobileappstudios(),
+    html: basic("Quick wins for your app studio", "A short note on lifting activation & retention."),
   },
   {
-    title: "Cold outreach (problem/pain — case-study-led",
+    title: "Cold outreach — case-study-led",
     category: "Outreach",
-    html: coldoutreachproblempaincasestudyled(),
+    html: basic("Case study: fast growth plan", "Three quick fixes we used to move key metrics."),
   },
   {
     title: "Cold Outreach — SaaS (B2B/B2C)",
